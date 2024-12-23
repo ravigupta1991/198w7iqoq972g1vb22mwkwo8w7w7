@@ -1,8 +1,4 @@
 const { Client, IntentsBitField, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const express = require('express'); 
-
-const app = express();
-const port = 3000; // You can change this to your desired port
 
 const client = new Client({
   intents: [
@@ -104,7 +100,7 @@ const easyWords = ["Jumps over the lazy dog" ,
 "Excuse me" ,
 "If you please" ,
 "May I help you?" ,
-"What's your name?" ,
+"Whats your name?" ,
 "My name is..." ,
 "Nice to meet you" ,
 "How are you doing?" ,
@@ -361,7 +357,7 @@ const hardWords = ["cryptography", "authentication", "authorization", "cybersecu
 "Inexcusable" ,
 "Inexplicable"];
 
-client.once('ready', () => {
+client.once('ready', async () => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
 
   const commands = [
@@ -381,9 +377,12 @@ client.once('ready', () => {
       ),
   ];
 
-  client.guilds.cache.forEach(async (guild) => {
-    await guild.commands.set(commands);
-  });
+  try {
+    await client.application.commands.set(commands);
+    console.log('Slash commands deployed globally.');
+  } catch (error) {
+    console.error('Error deploying commands:', error);
+  }
 });
 
 client.on('interactionCreate', async (interaction) => {
@@ -464,12 +463,3 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(process.env.TOKEN);
-
-// Simple HTTP server
-app.get('/', (req, res) => {
-  res.send('Hello from the Fast Type Bot!');
-});
-
-app.listen(port, () => {
-  console.log(`HTTP server listening on port ${port}`);
-});
