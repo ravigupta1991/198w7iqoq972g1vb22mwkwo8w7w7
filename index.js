@@ -1,4 +1,8 @@
 const { Client, IntentsBitField, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const express = require('express'); 
+
+const app = express();
+const port = 3000; // You can change this to your desired port
 
 const client = new Client({
   intents: [
@@ -100,7 +104,7 @@ const easyWords = ["Jumps over the lazy dog" ,
 "Excuse me" ,
 "If you please" ,
 "May I help you?" ,
-"Whats your name?" ,
+"What's your name?" ,
 "My name is..." ,
 "Nice to meet you" ,
 "How are you doing?" ,
