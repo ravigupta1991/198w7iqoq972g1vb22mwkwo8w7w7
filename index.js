@@ -463,3 +463,12 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(process.env.TOKEN);
+
+// Simple HTTP server
+app.get('/', (req, res) => {
+  res.send('Hello from the Fast Type Bot!');
+});
+
+app.listen(port, () => {
+  console.log(`HTTP server listening on port ${port}`);
+});
