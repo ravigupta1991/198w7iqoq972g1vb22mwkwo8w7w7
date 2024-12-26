@@ -422,7 +422,7 @@ client.on('interactionCreate', async (interaction) => {
       .setDescription(`**Type this:** ${randomWord}`)
       .setColor('#0099FF');
 
-    await interaction.channel.send({ embeds: [wordEmbed] });
+    await interaction.reply({ embeds: [wordEmbed] });
 
     const startTime = performance.now();
 
@@ -451,7 +451,7 @@ client.on('interactionCreate', async (interaction) => {
           .setColor('#00FF00')
           .setFooter({ text: 'Great job!' });
 
-        interaction.followUp({ embeds: [resultEmbed] });
+        msg.channel.send({ embeds: [resultEmbed] });
       }
     });
 
