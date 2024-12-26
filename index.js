@@ -422,7 +422,7 @@ client.on('interactionCreate', async (interaction) => {
       .setDescription(`**Type this:** ${randomWord}`)
       .setColor('#0099FF');
 
-    await interaction.reply({ embeds: [wordEmbed] });
+    await interaction.channel.send({ embeds: [wordEmbed] });
 
     const startTime = performance.now();
 
