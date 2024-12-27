@@ -1,472 +1,270 @@
-const { Client, IntentsBitField, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const express = require('express'); 
+require('dotenv').config(); // Load environment variables from .env file
+const express = require('express'); // Import express
+const { Client, GatewayIntentBits, EmbedBuilder, Colors } = require('discord.js');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
 
-const app = express();
-const port = 3000; // You can change this to your desired port
+const app = express(); // Create an express application
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
-const client = new Client({
-  intents: [
-    IntentsBitField.Flags.Guilds,
-    IntentsBitField.Flags.GuildMessages,
-  ],
+// Use environment variables for the token and client ID
+const TOKEN = process.env.DISCORD_TOKEN; 
+const CLIENT_ID = process.env.DISCORD_CLIENT_ID; 
+
+// Define your slash commands
+const commands = [
+    {
+        name: 'fasttype',
+        description: 'Type the given phrase as fast as you can!',
+    },
+];
+
+const rest = new REST({ version: '9' }).setToken(TOKEN);
+
+// Register the commands globally
+(async () => {
+    try {
+        console.log('Started refreshing application (/) commands.');
+
+        await rest.put(Routes.applicationCommands(CLIENT_ID), {
+            body: commands,
+        });
+
+        console.log('Successfully reloaded application (/) commands.');
+    } catch (error) {
+        console.error(error);
+    }
+})();
+
+client.on('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`);
 });
 
-const easyWords = [
-  "Jumps over the lazy dog",
-  "A quick brown fox",
-  "Jumps over a dog",
-  "The lazy dog sleeps",
-  "Quick brown fox",
-  "Lazy dog sleeps",
-  "Jump high",
-  "Run fast",
-  "Red car",
-  "Blue sky",
-  "Green grass",
-  "Happy days",
-  "Good morning",
-  "Hello world",
-  "How are you?",
-  "I am fine",
-  "Thank you",
-  "Your welcome",
-  "Please and thank you",
-  "One two three",
-  "Red, green, blue",
-  "Up and down",
-  "Left and right",
-  "Round and round",
-  "Fast and slow",
-  "Hot and cold",
-  "Big and small",
-  "Long and short",
-  "Black and white",
-  "Yes or no",
-  "On and off",
-  "In and out",
-  "Up and down",
-  "Over and under",
-  "Around and around",
-  "Happy birthday",
-  "Merry Christmas",
-  "Happy New Year",
-  "Good night",
-  "Sweet dreams",
-  "See you later",
-  "Take care",
-  "Have a nice day",
-  "I love you",
-  "You are welcome",
-  "Please help me",
-  "Thank you very much",
-  "I appreciate it",
-  "You're the best",
-  "I agree",
-  "I disagree",
-  "Maybe later",
-  "I understand",
-  "I don't know",
-  "I think so",
-  "I hope so",
-  "Let's go",
-  "Come here",
-  "Go away",
-  "Stop now",
-  "Look out",
-  "Listen up",
-  "Hurry up",
-  "Slow down",
-  "Turn around",
-  "Look here",
-  "Come on",
-  "Keep going",
-  "Give it a try",
-  "Good job",
-  "Well done",
-  "Nice work",
-  "Keep practicing",
-  "You can do it",
-  "I believe in you",
-  "Never give up",
-  "Try again",
-  "One more time",
-  "Let's play",
-  "Ready, set, go",
-  "Stop and wait",
-  "Take a break",
-  "Have fun" ,
-  "Be careful" ,
-  "Stay safe" ,
-  "Help me please" ,
-  "Can you help me?" ,
-  "I need your help" ,
-  "Thank you for your help" ,
-  "I am sorry" ,
-  "Excuse me" ,
-  "If you please" ,
-  "May I help you?" ,
-  "What's your name?" ,
-  "My name is..." ,
-  "Nice to meet you" ,
-  "How are you doing?" ,
-  "I am doing well" ,
-  "Have a good day" ,
-  "See you soon" 
-];
-const mediumWords = ["The cat sat on the mat" ,
-"A dog is man's best friend" ,
-"The sky is blue" ,
-"The grass is green" ,
-"The sun is shining" ,
-"The rain is falling" ,
-"The wind is blowing" ,
-"The birds are singing" ,
-"The flowers are blooming" ,
-"The trees are growing" ,
-"The moon is shining" ,
-"The stars are twinkling" ,
-"The ocean is blue" ,
-"The mountains are high" ,
-"The forest is green" ,
-"The river is flowing" ,
-"The waterfall is crashing" ,
-"The beach is sandy" ,
-"The sand is hot" ,
-"The sun is warm" ,
-"The water is cool" ,
-"The air is fresh" ,
-"The food is delicious" ,
-"The coffee is hot" ,
-"The tea is strong" ,
-"The wine is good" ,
-"The beer is cold" ,
-"The music is loud" ,
-"The movie is good" ,
-"The book is interesting" ,
-"The game is exciting" ,
-"The sport is fun" ,
-"The dance is beautiful" ,
-"The art is amazing" ,
-"The science is fascinating" ,
-"The math is difficult" ,
-"The history is interesting" ,
-"The English is hard" ,
-"The French is difficult" ,
-"The Spanish is easy" ,
-"The German is hard" ,
-"The Italian is beautiful" ,
-"The Japanese is difficult" ,
-"The Chinese is hard" ,
-"The Russian is difficult" ,
-"The Arabic is difficult" ,
-"The Hindi is difficult" ,
-"The Bengali is difficult" ,
-"The Punjabi is difficult" ,
-"The Tamil is difficult" ,
-"The Telugu is difficult" ,
-"The Malayalam is difficult" ,
-"The Kannada is difficult" ,
-"The Marathi is difficult" ,
-"The Gujarati is difficult" ,
-"The Odia is difficult" ,
-"The Assamese is difficult" ,
-"The Bengali is difficult" ,
-"The Bodo is difficult" ,
-"The Manipuri is difficult" ,
-"The Mizo is difficult" ,
-"The Naga is difficult" ,
-"The Khasi is difficult" ,
-"The Garo is difficult" ,
-"The Hmar is difficult" ,
-"The Kachin is difficult" ,
-"The Karen is difficult" ,
-"The Shan is difficult" ,
-"The Mon is difficult" ,
-"The Karenni is difficult" ,
-"The Kayah is difficult" ,
-"The Lahu is difficult" ,
-"The Akha is difficult" ,
-"The Wa is difficult" ,
-"The Lisu is difficult" ,
-"The Palaung is difficult" ,
-"The Karenni is difficult" ,
-"The Shan is difficult" ,
-"The Mon is difficult" ,
-"The Karenni is difficult" ,
-"The Kayah is difficult" ,
-"The Lahu is difficult" ,
-"The Akha is difficult" ,
-"The Wa is difficult" ,
-"The Lisu is difficult" ,
-"The Palaung is difficult" ,
-"The Karenni is difficult" ,
-"The Shan is difficult" ,
-"The Mon is difficult" ,
-"The Karenni is difficult" ,
-"The Kayah is difficult" ,
-"The Lahu is difficult" ,
-"The Akha is difficult" ,
-"The Wa is difficult" ,
-"The Lisu is difficult" ,
-"The Palaung is difficult" ,
-"The Karenni is difficult" ,
-"The Shan is difficult" ,
-"The Mon is difficult" ,
-"The Karenni is difficult" ,
-"The Kayah is difficult" ,
-"The Lahu is difficult" ,
-"The Akha is difficult" ,
-"The Wa is difficult" ,
-"The Lisu is difficult" ,
-"The Palaung is difficult" ,
-"The Karenni is difficult" ,
-"The Shan is difficult" ,
-"The Mon is difficult" ,
-"The Karenni is difficult" ,
-"The Kayah is difficult" ,
-"The Lahu is difficult" ,
-"The Akha is difficult" ,
-"The Wa is difficult" ,
-"The Lisu is difficult" ,
-"The Palaung is difficult"];
-const hardWords = ["cryptography", "authentication", "authorization", "cybersecurity", "machinelearning",
-"Supercalifragilisticexpialidocious" ,
-"Pneumonoultramicroscopicsilicovolcanoconiosis" ,
-"Antidisestablishmentarianism" ,
-"Pseudopseudohypoparathyroidism" ,
-"Floccinaucinihilipilification" ,
-"Honorificabilitudinitatibus" ,
-"Hippopotomonstrosesquipedalianism" ,
-"Sesquipedalian" ,
-"Obfuscation" ,
-"Indubitably" ,
-"Quintessential" ,
-"Serendipitous" ,
-"Mellifluous" ,
-"Magnanimous" ,
-"Ubiquitous" ,
-"Ethereal" ,
-"Nostalgia" ,
-"Melancholic" ,
-"Conscientious" ,
-"Perseverence" ,
-"Perambulate" ,
-"Equivocal" ,
-"Paradoxical" ,
-"Synergistic" ,
-"Circumnavigate" ,
-"Simultaneously" ,
-"Synchronicity" ,
-"Quintessence" ,
-"Fortuitous" ,
-"Indefatigable" ,
-"Magniloquent" ,
-"Loquacious" ,
-"Verisimilitude" ,
-"Infallibility" ,
-"Indelible" ,
-"Inimitable" ,
-"Invincible" ,
-"Inscrutable" ,
-"Intangible" ,
-"Intricate" ,
-"Intriguing" ,
-"Invaluable" ,
-"Invulnerable" ,
-"Irascible" ,
-"Irrational" ,
-"Irrevocable" ,
-"Irresistible" ,
-"Irreversible" ,
-"Irrelevant" ,
-"Irreplaceable" ,
-"Irreproachable" ,
-"Iridescent" ,
-"Itinerant" ,
-"Inexorable" ,
-"Inexplicable" ,
-"Inexcusable" ,
-"Inexplicable" ,
-"Infallible" ,
-"Indefatigable" ,
-"Indelible" ,
-"Inimitable" ,
-"Invincible" ,
-"Inscrutable" ,
-"Intangible" ,
-"Intricate" ,
-"Intriguing" ,
-"Invaluable" ,
-"Invulnerable" ,
-"Irascible" ,
-"Irrational" ,
-"Irrevocable" ,
-"Irresistible" ,
-"Irreversible" ,
-"Irrelevant" ,
-"Irreplaceable" ,
-"Irreproachable" ,
-"Iridescent" ,
-"Itinerant" ,
-"Inexorable" ,
-"Inexplicable" ,
-"Inexcusable" ,
-"Inexplicable" ,
-"Infallible" ,
-"Indefatigable" ,
-"Indelible" ,
-"Inimitable" ,
-"Invincible" ,
-"Inscrutable" ,
-"Intangible" ,
-"Intricate" ,
-"Intriguing" ,
-"Invaluable" ,
-"Invulnerable" ,
-"Irascible" ,
-"Irrational" ,
-"Irrevocable" ,
-"Irresistible" ,
-"Irreversible" ,
-"Irrelevant" ,
-"Irreplaceable" ,
-"Irreproachable" ,
-"Iridescent" ,
-"Itinerant" ,
-"Inexorable" ,
-"Inexplicable" ,
-"Inexcusable" ,
-"Inexplicable" ,
-"Infallible" ,
-"Indefatigable" ,
-"Indelible" ,
-"Inimitable" ,
-"Invincible" ,
-"Inscrutable" ,
-"Intangible" ,
-"Intricate" ,
-"Intriguing" ,
-"Invaluable" ,
-"Invulnerable" ,
-"Irascible" ,
-"Irrational" ,
-"Irrevocable" ,
-"Irresistible" ,
-"Irreversible" ,
-"Irrelevant" ,
-"Irreplaceable" ,
-"Irreproachable" ,
-"Iridescent" ,
-"Itinerant" ,
-"Inexorable" ,
-"Inexplicable" ,
-"Inexcusable" ,
-"Inexplicable"];
+// Set up a simple HTTP endpoint
+app.get('/', (req, res) => {
+    res.send('Hello! The bot is running.');
+});
 
-client.once('ready', async () => {
-  console.log(`Ready! Logged in as ${client.user.tag}`);
-
-  const commands = [
-    new SlashCommandBuilder()
-      .setName('fasttype')
-      .setDescription('Start a fast typing race.')
-      .addStringOption((option) =>
-        option
-          .setName('difficulty')
-          .setDescription('Choose difficulty level')
-          .setRequired(true)
-          .addChoices(
-            { name: 'Easy', value: 'easy' },
-            { name: 'Medium', value: 'medium' },
-            { name: 'Hard', value: 'hard' }
-          )
-      ),
-  ];
-
-  try {
-    await client.application.commands.set(commands);
-    console.log('Slash commands deployed globally.');
-  } catch (error) {
-    console.error('Error deploying commands:', error);
-  }
+// Start the HTTP server
+const PORT = process.env.PORT || 3000; // Use environment variable or default to 3000
+app.listen(PORT, () => {
+    console.log(`HTTP server is running on port ${PORT}`);
 });
 
 client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+    if (!interaction.isCommand()) return;
 
-  const { commandName } = interaction;
+    const { commandName } = interaction;
 
-  if (commandName === 'fasttype') {
-    const difficulty = interaction.options.getString('difficulty');
-    let wordList;
+    if (commandName === 'fasttype') {
+        const phrases = [
+            "The quick brown fox jumps over the lazy dog.",
+    "A journey of a thousand miles begins with a single step.",
+    "To be or not to be, that is the question.",
+    "All that glitters is not gold.",
+    "A picture is worth a thousand words.",
+    "Actions speak louder than words.",
+    "Beauty is in the eye of the beholder.",
+    "Brevity is the soul of wit.",
+    "A watched pot never boils.",
+    "When in Rome, do as the Romans do.",
+    "The early bird catches the worm.",
+    "Don't count your chickens before they hatch.",
+    "Every cloud has a silver lining.",
+    "Fortune favors the bold.",
+    "Good things come to those who wait.",
+    "If it ain't broke, don't fix it.",
+    "Ignorance is bliss.",
+    "It's better to be safe than sorry.",
+    "Laughter is the best medicine.",
+    "No man is an island.",
+    "Practice makes perfect.",
+    "The pen is mightier than the sword.",
+    "There's no place like home.",
+    "Time flies when you're having fun.",
+    "You can't judge a book by its cover.",
+    "A penny saved is a penny earned.",
+    "Actions have consequences.",
+    "Better late than never.",
+    "Birds of a feather flock together.",
+    "Cleanliness is next to godliness.",
+    "Don't bite the hand that feeds you.",
+    "Don't put all your eggs in one basket.",
+    "Every rose has its thorn.",
+    "Familiarity breeds contempt.",
+    "Haste makes waste.",
+    "Honesty is the best policy.",
+    "If you can't stand the heat, get out of the kitchen.",
+    "It takes two to tango.",
+    "Jack of all trades, master of none.",
+    "Knowledge is power.",
+    "Let sleeping dogs lie.",
+    "Money can't buy happiness.",
+    "No pain, no gain.",
+    "Out of sight, out of mind.",
+    "Practice what you preach.",
+    "Rome wasn't built in a day.",
+    "Silence is golden.",
+    "The grass is always greener on the other side.",
+    "The road to hell is paved with good intentions.",
+    "There's no such thing as a free lunch.",
+    "Two heads are better than one.",
+    "What goes around comes around.",
+    "When the going gets tough, the tough get going.",
+    "You can't have your cake and eat it too.",
+    "You reap what you sow.",
+    "A fool and his money are soon parted.",
+    "A house divided against itself cannot stand.",
+    "A leopard can't change its spots.",
+    "A rolling stone gathers no moss.",
+    "All good things come to an end.",
+    "All's fair in love and war.",
+    "An apple a day keeps the doctor away.",
+    "As you sow, so shall you reap.",
+    "Barking dogs seldom bite.",
+    "Blood is thicker than water.",
+    "Charity begins at home.",
+    "Clean slate.",
+    "Curiosity killed the cat.",
+    "Don't judge a man until you've walked a mile in his shoes.",
+    "Don't throw the baby out with the bathwater.",
+    "Every dog has its day.",
+    "Fool me once, shame on you; fool me twice, shame on me.",
+    "Good fences make good neighbors.",
+    "He who laughs last laughs best.",
+    "Hope for the best, but prepare for the worst.",
+    "If you want something done right, do it yourself.",
+    "In the land of the blind, the one-eyed man is king.",
+    "It’s not the size of the dog in the fight, it’s the size of the fight in the dog.",
+    "Keep your friends close and your enemies closer.",
+    "Knowledge is a treasure, but practice is the key to it.",
+    "Let the cat out of the bag.",
+    "Life is what happens when you're busy making other plans.",
+    "Make hay while the sun shines.",
+    "Misery loves company.",
+    "No use crying over spilled milk.",
+    "One man's trash is another man's treasure.",
+    "Out of the frying pan and into the fire.",
+    "Patience is a virtue.",
+    "Penny for your thoughts.",
+    "Practice makes perfect.",
+    "Put your best foot forward.",
+    "Revenge is a dish best served cold.",
+    "The apple doesn't fall far from the tree.",
+    "The best things in life are free.",
+    "The calm before the storm.",
+    "The devil is in the details.",
+    "The early bird gets the worm.",
+    "The proof of the pudding is in the eating.",
+    "The squeaky wheel gets the grease.",
+    "There's no time like the present.",
+    "To err is human; to forgive, divine.",
+    "Too many cooks spoil the broth.",
+    "Turn over a new leaf.",
+    "What doesn't kill you makes you stronger.",
+    "When it rains, it pours.",
+    "You can't make an omelet without breaking eggs.",
+    "You can't teach an old dog new tricks.",
+    "You win some, you lose some.",
+    "A bird in the hand is worth two in the bush.",
+    "A chain is only as strong as its weakest link.",
+    "A friend in need is a friend indeed.",
+    "A house is not a home.",
+    "A little knowledge is a dangerous thing.",
+    "A stitch in time saves nine.",
+    "All bark and no bite.",
+    "All roads lead to Rome.",
+    "Beggars can't be choosers.",
+    "Better safe than sorry.",
+    "Blood will out.",
+    "Caught between a rock and a hard place.",
+    "Don't count your blessings before they hatch.",
+    "Don't put the cart before the horse.",
+    "Every little bit helps.",
+    "Faint heart never won fair lady.",
+    "Fools rush in where angels fear to tread.",
+    "Good things come in small packages.",
+    "If it sounds too good to be true, it probably is.",
+    "If you can't beat them, join them.",
+    "If you lie down with dogs, you will get up with fleas.",
+    "In for a penny, in for a pound.",
+    "It takes one to know one.",
+    "Keep your chin up.",
+    "Kill two birds with one stone.",
+    "Let bygones be bygones.",
+    "Make a mountain out of a molehill.",
+    "Money talks.",
+    "No news is good news.",
+    "One step at a time.",
+    "Put all your eggs in one basket.",
+    "Rome wasn't built in a day.",
+    "Seeing is believing.",
+    "The best laid plans of mice and men often go awry.",
+    "The grass is always greener on the other side.",
+    "The more things change, the more they stay the same.",
+    "There's no place like home.",
+    "Time and tide wait for no man.",
+    "To each their own.",
+    "Too good to be true.",
+    "Two wrongs don't make a right.",
+    "What goes up must come down.",
+    "When the cat's away, the mice will play.",
+    "You can't always get what you want.",
+    "You can't have it both ways.",
+    "You can't teach an old dog new tricks.",
+    "You reap what you sow.",
+    "Your guess is as good as mine."
+        ];
 
-    switch (difficulty) {
-      case 'easy':
-        wordList = easyWords;
-        break;
-      case 'medium':
-        wordList = mediumWords;
-        break;
-      case 'hard':
-        wordList = hardWords;
-        break;
-      default:
-        await interaction.reply('Invalid difficulty. Use /fasttype with easy, medium, or hard.');
-        return;
+        const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+
+        // Send the initial embed for the typing challenge
+        const challengeEmbed = new EmbedBuilder()
+            .setTitle('Fast Type Challenge')
+            .setDescription(`Type this phrase as fast as you can:\n\n**"${phrase}"**`)
+            .setColor(Colors.Blue);
+
+        await interaction.reply({ embeds: [challengeEmbed] });
+
+        // Wait for the user's response
+        const filter = response => response.author.id === interaction.user.id;
+        const collector = interaction.channel.createMessageCollector({ filter }); // No time limit
+
+        let startTime = Date.now();
+
+        collector.on('collect', collected => {
+            const userInput = collected.content.trim(); // Trim whitespace
+            const targetPhrase = phrase.trim(); // Trim whitespace
+
+            console.log(`User  typed: "${userInput}"`); // Debugging line
+
+            // Compare the trimmed and lowercased inputs
+            if (userInput.toLowerCase() === targetPhrase.toLowerCase()) {
+                collector.stop('correct');
+
+                const endTime = Date.now();
+                const timeTaken = (endTime - startTime) / 1000; // Convert to seconds
+                const numWords = targetPhrase.split(' ').length;
+                const wpm = (numWords / timeTaken) * 60; // Calculate words per minute
+                const accuracy = 100; // Assuming the user typed the phrase correctly
+
+                // Create the result embed
+                const resultEmbed = new EmbedBuilder()
+                    .setTitle('Fast Type Result')
+                    .addFields(
+                        { name: 'Time Taken', value: `${timeTaken.toFixed(2)} seconds`, inline: true },
+                        { name: 'Words Per Minute', value: `${wpm.toFixed(2)} wpm`, inline: true },
+                        { name: 'Accuracy', value: `${accuracy}%`, inline: true }
+                    )
+                    .setColor(Colors.Green);
+
+                interaction.followUp({ embeds: [resultEmbed] });
+            } else {
+                interaction.followUp(`That's not correct! Keep trying!`);
+            }
+        });
     }
-
-    const randomWord = wordList[Math.floor(Math.random() * wordList.length)];
-
-    const wordEmbed = new EmbedBuilder()
-      .setTitle('Fast Type Challenge')
-      .setDescription(`**Type this:** ${randomWord}`)
-      .setColor('#0099FF');
-
-    await interaction.reply({ embeds: [wordEmbed] });
-
-    const startTime = performance.now();
-
-    const filter = (msg) => msg.author.id === interaction.user.id && msg.content.trim().toLowerCase() === randomWord.toLowerCase();
-
-    const collector = interaction.channel.createMessageCollector({ filter, time: 86400000 }); // Timeout set to 1 day (86400000 milliseconds)
-
-    let winner = null;
-
-    collector.on('collect', (msg) => {
-      if (!winner) {
-        const endTime = performance.now();
-        const timeTaken = ((endTime - startTime) / 1000).toFixed(2); 
-        const wordsPerMinute = (60 / timeTaken).toFixed(2); 
-
-        collector.stop();
-
-        const resultEmbed = new EmbedBuilder()
-          .setTitle('Fast Type Results')
-          .setDescription(`${msg.author} finished the race! 🏆`)
-          .addFields(
-            { name: 'Time', value: `${timeTaken} seconds`, inline: true },
-            { name: 'Words Per Minute', value: `${wordsPerMinute} WPM`, inline: true },
-            { name: 'Accuracy', value: '100%', inline: true } // Always 100% accuracy if the word is typed correctly
-          )
-          .setColor('#00FF00')
-          .setFooter({ text: 'Great job!' });
-
-        msg.channel.send({ embeds: [resultEmbed] });
-      }
-    });
-
-    // Removed the 'end' event handler to prevent sending a timeout message
-
-  }
 });
 
-client.login(process.env.TOKEN);
-
-// Simple HTTP server
-app.get('/', (req, res) => {
-  res.send('Hello from the Fast Type Bot!');
-});
-
-app.listen(port, () => {
-  console.log(`HTTP server listening on port ${port}`);
-});
+// Log in to Discord with your bot's token
+client.login(TOKEN);
